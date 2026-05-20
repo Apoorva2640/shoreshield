@@ -1,28 +1,168 @@
-🌊 ShoreShield — Coastal Hazard Intelligence System
+# ShoreShield — Coastal Hazard Intelligence Engine
 
-ShoreShield is an AI-assisted coastal hazard intelligence platform designed to detect, analyze, and visualize emerging marine risks using crowdsourced reports and social signal analysis.
+> An AI-assisted pipeline for fusing crowdsourced field reports and social signals into confidence-ranked coastal hazard alerts.
 
-The system combines citizen-submitted hazard reports with AI-driven event interpretation to identify potential coastal threats such as rough seas, flooding, pollution events, abnormal wave activity, and other ocean-related hazards. Instead of treating reports as isolated incidents, ShoreShield performs event fusion by correlating reports spatially and temporally to detect meaningful risk clusters.
+Built for the INCOIS problem statement: *Integrated platform for crowdsourced ocean hazard reporting and social media analytics.*
 
-Key capabilities include:
+---
 
-• Crowdsourced hazard reporting with geolocation support
-• AI-powered hazard classification and severity estimation
-• Social signal integration for multi-source validation
-• Spatial clustering using geospatial distance analysis
-• Temporal grouping of related hazard events
-• Confidence-ranked alert generation using source diversity, recency, and report density
-• Explainable operational intelligence feed for real-time monitoring
-• Geospatial visualization of clustered coastal risks
+## What this is
 
-The platform uses zero-shot NLP via Anthropic API to extract hazard type, severity, confidence, and inferred location information from unstructured reports. A custom confidence engine combines AI certainty, source diversity, temporal recency, and correlated report volume to prioritize alerts and reduce false positives.
+ShoreShield is not a dashboard. It is a signal processing pipeline.
 
-Unlike traditional dashboard-focused systems, ShoreShield emphasizes interpretable hazard intelligence and early event detection through multi-source coastal signal fusion.
+The core problem it solves: coastal hazard reports arrive as noisy, unstructured, unverified text from multiple sources. A fisherman sends a voice-to-text message. Someone tweets about rough seas. A field worker submits a one-line observation. None of these alone are actionable. Together, correlated by location and time, they can indicate a real emerging threat.
 
-Tech Stack:
-• Next.js
-• TypeScript
-• Firebase Firestore
-• MapLibre GL
-• Anthropic API
-• OpenStreetMap
+ShoreShield ingests these signals, classifies them using a structured AI prompt, clusters them spatially and temporally, computes a confidence score that accounts for source diversity and recency, and surfaces a ranked alert with a plain-English explanation an operator can act on.
+
+---
+
+## Pipeline architecture
+
+```
+Citizen report / Social signal
+        ↓
+Normalize into shared event schema
+{ source, text, lat, lng, timestamp }
+        ↓
+AI classification (Anthropic API)
+{ hazard_type, severity, confidence, location, reason }
+        ↓
+Spatial + temporal clustering
+50km radius · 6-hour window · haversine distance
+        ↓
+Confidence engine
+avg(AI scores) × recency_decay × count_weight + source_diversity_bonus
+        ↓
+Ranked alert with evidence summary
+"3 reports near Vizag — 2 citizen + 1 social · rough_seas · confidence 87%"
+        ↓
+Operator notification
+Email alert fires when confidence ≥ 0.75 and high severity cluster detected
+```
+
+---
+
+## Why this approach
+
+Most submissions for this problem statement build a map with markers. ShoreShield treats the map as supporting context — the primary surface is the intelligence feed.
+
+The design decision is deliberate: INCOIS operators don't need to see where reports are. They need to know **which reports deserve attention, how confident we are, and why**. That requires event fusion and uncertainty estimation, not visualization.
+
+Key methodological choices:
+
+- **Structured prompt contract** — the AI prompt enforces output schema and defines confidence bands explicitly, so classification is consistent and auditable rather than freeform
+- **Haversine spatial clustering** — real geospatial distance calculation instead of string-matching on place names
+- **Source diversity bonus** — clusters containing both citizen reports and social signals receive a confidence boost, reflecting corroborated evidence
+- **Explainability by design** — every classification includes a `reason` field in plain English, surfaced to the operator
+
+---
+
+## Intelligence feed
+
+The primary UI surface shows:
+
+- **Pattern insights** — session-level observations ("3 of 5 reports are high severity — concentrated review recommended")
+- **Active alert clusters** — ranked by confidence with progress bar and evidence summary
+- **Social signal clusters** — flagged as unverified, awaiting field corroboration
+- **Recent reports** — each card shows hazard type, severity, confidence score, and AI-generated reason
+
+---
+
+## Tech stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | Next.js 14 (App Router), TypeScript |
+| Map | MapLibre GL + react-map-gl |
+| Database | Firebase Firestore (real-time) |
+| AI classification | Anthropic API (claude-sonnet) |
+| Geocoding | OpenStreetMap Nominatim |
+| Alert notifications | EmailJS |
+| Tile server | CARTO dark-matter |
+
+---
+
+## Local setup
+
+```bash
+git clone https://github.com/your-username/shoreshield.git
+cd shoreshield
+npm install
+```
+
+Create `.env.local`:
+
+```env
+NEXT_PUBLIC_FIREBASE_API_KEY=
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=
+ANTHROPIC_API_KEY=
+NEXT_PUBLIC_EMAILJS_SERVICE_ID=
+NEXT_PUBLIC_EMAILJS_TEMPLATE_ID=
+NEXT_PUBLIC_EMAILJS_PUBLIC_KEY=
+NEXT_PUBLIC_ALERT_EMAIL=
+```
+
+```bash
+npm run dev
+```
+
+Visit `http://localhost:3000`
+
+---
+
+## Demo scenario
+
+Submit this report to see the full pipeline in action:
+
+> *"Walking on the beach near Vizag, the water pulled back very fast and the ocean floor was visible. Everyone started running."*
+
+The AI will classify this as `tsunami / high severity / confidence 0.89` with the reason: *"Classic tsunami precursor — rapid water recession and exposed seabed described firsthand."*
+
+If a second corroborating report arrives within 50km and 6 hours, a high-risk cluster forms, confidence updates, and an operator email alert fires automatically.
+
+---
+
+## Confidence formula
+
+```
+final_confidence = min(1.0,
+  avg(per_report_AI_scores)
+  × recency_decay          // 1.0 if any report < 2hr old, else 0.85
+  × count_weight           // min(1, 0.5 + report_count × 0.1)
+  + source_diversity_bonus // +0.1 if both citizen and social signals present
+)
+```
+
+This is deliberately simple and interpretable. The goal is a score an operator can reason about, not a black-box ranking.
+
+---
+
+## Limitations and future work
+
+- **Social signal ingestion** is currently manual (users tag reports as social signals). Live integration with public APIs would make this automatic.
+- **Clustering threshold** (50km, 6hr) is fixed. Adaptive thresholds based on hazard type would improve precision — tsunami signals warrant tighter spatial grouping than pollution events.
+- **Confidence calibration** — the formula is heuristic. A proper calibration study against historical INCOIS event data would validate and improve the scoring.
+- **Reporter interface** — the current submission form is web-based. A mobile-first reporter app or WhatsApp bot would increase real-world report volume.
+
+---
+
+## Research framing
+
+This project was built to explore a specific question:
+
+*Can a lightweight AI pipeline convert noisy, multi-source coastal observations into operationally useful hazard intelligence without requiring labelled training data or domain-specific models?*
+
+The answer from this prototype is yes — with appropriate prompt engineering, spatial reasoning, and uncertainty quantification, zero-shot classification via a general-purpose LLM is sufficient for triage-level coastal hazard detection.
+
+---
+
+## Author
+
+**Apoorva Gandham**
+AI/ML student · interested in ocean systems and marine AI research
+Building technology for environmental decision support.
+
+---
+
+*Built for INCOIS Smart Hackathon — problem statement: Integrated platform for crowdsourced ocean hazard reporting and social media analytics.*
