@@ -1,0 +1,28 @@
+🌊 ShoreShield — Coastal Hazard Intelligence System
+
+ShoreShield is an AI-assisted coastal hazard intelligence platform designed to detect, analyze, and visualize emerging marine risks using crowdsourced reports and social signal analysis.
+
+The system combines citizen-submitted hazard reports with AI-driven event interpretation to identify potential coastal threats such as rough seas, flooding, pollution events, abnormal wave activity, and other ocean-related hazards. Instead of treating reports as isolated incidents, ShoreShield performs event fusion by correlating reports spatially and temporally to detect meaningful risk clusters.
+
+Key capabilities include:
+
+• Crowdsourced hazard reporting with geolocation support
+• AI-powered hazard classification and severity estimation
+• Social signal integration for multi-source validation
+• Spatial clustering using geospatial distance analysis
+• Temporal grouping of related hazard events
+• Confidence-ranked alert generation using source diversity, recency, and report density
+• Explainable operational intelligence feed for real-time monitoring
+• Geospatial visualization of clustered coastal risks
+
+The platform uses zero-shot NLP via Anthropic API to extract hazard type, severity, confidence, and inferred location information from unstructured reports. A custom confidence engine combines AI certainty, source diversity, temporal recency, and correlated report volume to prioritize alerts and reduce false positives.
+
+Unlike traditional dashboard-focused systems, ShoreShield emphasizes interpretable hazard intelligence and early event detection through multi-source coastal signal fusion.
+
+Tech Stack:
+• Next.js
+• TypeScript
+• Firebase Firestore
+• MapLibre GL
+• Anthropic API
+• OpenStreetMap
