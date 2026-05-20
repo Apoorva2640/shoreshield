@@ -157,6 +157,16 @@ The answer from this prototype is yes — with appropriate prompt engineering, s
 
 ---
 
+## Screenshots
+
+### ShoreShield Dashboard
+![Dashboard](./public/screenshots/dashboard.png)
+
+### Automated Alert System
+![Email Alert](./public/screenshots/email-alert.jpeg)
+
+---
+
 ## Author
 
 **Apoorva Gandham**
